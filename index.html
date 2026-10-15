@@ -1,0 +1,389 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Meal l | Homemade Food</title>
+<style>
+:root {
+  --green: #198754;
+  --dark: #17231c;
+  --light: #f5f8f5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--light);
+  color: #222;
+}
+header {
+  background: var(--dark);
+  color: white;
+  padding: 22px 16px;
+  text-align: center;
+}
+header h1 { margin: 0 0 8px; }
+header p { margin: 0; color: #d6e6da; }
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  background: white;
+  flex-wrap: wrap;
+}
+button, select, input {
+  font: inherit;
+  border-radius: 8px;
+  padding: 11px;
+}
+button {
+  cursor: pointer;
+  border: 0;
+  background: var(--green);
+  color: white;
+  font-weight: bold;
+}
+button.secondary { background: #35443a; }
+button.danger { background: #c93636; }
+main {
+  max-width: 900px;
+  margin: auto;
+  padding: 18px;
+}
+h2 { margin-top: 8px; }
+.filters { margin: 15px 0; }
+.filters select { width: 100%; border: 1px solid #ccc; }
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 13px;
+}
+.item {
+  background: white;
+  border: 1px solid #e1e8e2;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 3px 10px #00000008;
+}
+.item h3 { margin: 0 0 10px; }
+.price {
+  color: var(--green);
+  font-size: 21px;
+  font-weight: bold;
+}
+.item small { color: #666; }
+.panel {
+  background: white;
+  border: 1px solid #dce5de;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+}
+.hidden { display: none !important; }
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.form-grid input, .form-grid select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #ccc;
+  background: white;
+}
+.form-grid .full { grid-column: 1 / -1; }
+.admin-row {
+  border-top: 1px solid #eee;
+  padding: 13px 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+.notice {
+  background: #fff5d8;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+footer {
+  text-align: center;
+  padding: 22px;
+  color: #666;
+}
+@media(max-width:420px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid .full { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Daily Meal l</h1>
+  <p>Fresh, homemade food made with care</p>
+</header>
+
+<nav>
+  <button onclick="showMenu()">Customer Menu</button>
+  <button class="secondary" onclick="showAdmin()">Admin Panel</button>
+</nav>
+
+<main>
+  <section id="menuSection">
+    <h2>Our Menu</h2>
+    <p>Choose your favourite homemade food.</p>
+    <div class="filters">
+      <select id="categoryFilter" onchange="renderMenu()">
+        <option value="All">All Categories</option>
+        <option value="Roti">Roti & Paratha</option>
+        <option value="Rice">Rice</option>
+        <option value="Sabji">Sabji</option>
+        <option value="Dal">Dal</option>
+      </select>
+    </div>
+    <div id="menuGrid" class="menu-grid"></div>
+  </section>
+
+  <section id="adminSection" class="hidden">
+    <h2>Admin Panel</h2>
+    <p>Add new items or manage your existing menu and prices.</p>
+
+    <div class="notice">
+      This first version saves menu changes in this browser only.
+      The Admin Panel is not securely protected yet. Do not treat it
+      as a private owner login or enter sensitive information.
+    </div>
+
+    <div class="panel">
+      <h3 id="formTitle">Add New Item</h3>
+      <form id="itemForm" class="form-grid">
+        <input id="itemName" class="full"
+          placeholder="Item name" required maxlength="80">
+
+        <select id="itemCategory" required>
+          <option value="Roti">Roti & Paratha</option>
+          <option value="Rice">Rice</option>
+          <option value="Sabji">Sabji</option>
+          <option value="Dal">Dal</option>
+        </select>
+
+        <input id="itemPrice" type="number" min="0"
+          step="0.01" placeholder="Price in ₹" required>
+
+        <button id="saveButton" class="full" type="submit">
+          Add Item
+        </button>
+        <button class="secondary full hidden" id="cancelButton"
+          type="button" onclick="resetForm()">Cancel Edit</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Manage Existing Items</h3>
+      <div id="adminList"></div>
+    </div>
+  </section>
+</main>
+
+<footer>Daily Meal l · Homemade Food</footer>
+
+<script>
+const defaultItems = [
+  {id:1,name:"Plain roti",category:"Roti",price:10},
+  {id:2,name:"Paratha",category:"Roti",price:15},
+  {id:3,name:"Methi paratha",category:"Roti",price:25},
+  {id:4,name:"Palak paratha",category:"Roti",price:25},
+  {id:5,name:"Beatroot paratha",category:"Roti",price:25},
+  {id:6,name:"Plain rice",category:"Rice",price:40},
+  {id:7,name:"Jeera rice",category:"Rice",price:50},
+  {id:8,name:"Soyabean pulao",category:"Rice",price:60},
+  {id:9,name:"Gobhi",category:"Sabji",price:60},
+  {id:10,name:"Tamatar",category:"Sabji",price:50},
+  {id:11,name:"Chole",category:"Sabji",price:60},
+  {id:12,name:"Bharta",category:"Sabji",price:50},
+  {id:13,name:"Methi",category:"Sabji",price:80},
+  {id:14,name:"Chawlai falli",category:"Sabji",price:40},
+  {id:15,name:"Aloo baigan",category:"Sabji",price:50},
+  {id:16,name:"Aloo matar",category:"Sabji",price:40},
+  {id:17,name:"Plain dal",category:"Dal",price:40},
+  {id:18,name:"Dal fry",category:"Dal",price:60}
+];
+
+let items;
+try {
+  const saved = localStorage.getItem("dailyMealMenu");
+  items = saved ? JSON.parse(saved) : defaultItems;
+  if (!Array.isArray(items)) items = defaultItems;
+} catch (e) {
+  items = defaultItems;
+}
+
+let editingId = null;
+
+function saveItems() {
+  try {
+    localStorage.setItem("dailyMealMenu", JSON.stringify(items));
+    renderMenu();
+    renderAdmin();
+  } catch (e) {
+    alert("Could not save changes in this browser.");
+  }
+}
+
+function showMenu() {
+  document.getElementById("menuSection").classList.remove("hidden");
+  document.getElementById("adminSection").classList.add("hidden");
+  renderMenu();
+}
+
+function showAdmin() {
+  document.getElementById("menuSection").classList.add("hidden");
+  document.getElementById("adminSection").classList.remove("hidden");
+  renderAdmin();
+}
+
+function renderMenu() {
+  const category = document.getElementById("categoryFilter").value;
+  const grid = document.getElementById("menuGrid");
+  grid.replaceChildren();
+
+  const visible = items.filter(x =>
+    category === "All" || x.category === category
+  );
+
+  if (!visible.length) {
+    grid.textContent = "No items in this category yet.";
+    return;
+  }
+
+  visible.forEach(item => {
+    const card = document.createElement("article");
+    card.className = "item";
+
+    const name = document.createElement("h3");
+    name.textContent = item.name;
+
+    const cat = document.createElement("small");
+    cat.textContent = item.category === "Roti"
+      ? "Roti & Paratha" : item.category;
+
+    const price = document.createElement("p");
+    price.className = "price";
+    price.textContent = "₹" + Number(item.price).toLocaleString("en-IN");
+
+    card.append(name, cat, price);
+    grid.appendChild(card);
+  });
+}
+
+function renderAdmin() {
+  const list = document.getElementById("adminList");
+  list.replaceChildren();
+
+  if (!items.length) {
+    list.textContent = "No menu items. Add one above.";
+    return;
+  }
+
+  items.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+
+    const name = document.createElement("strong");
+    name.textContent = item.name;
+
+    const details = document.createElement("div");
+    details.textContent = item.category + " · ₹" + item.price;
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    const edit = document.createElement("button");
+    edit.textContent = "Edit";
+    edit.onclick = () => editItem(item.id);
+
+    const del = document.createElement("button");
+    del.textContent = "Delete";
+    del.className = "danger";
+    del.onclick = () => deleteItem(item.id);
+
+    actions.append(edit, del);
+    row.append(name, details, actions);
+    list.appendChild(row);
+  });
+}
+
+function editItem(id) {
+  const item = items.find(x => x.id === id);
+  if (!item) return;
+
+  editingId = id;
+  document.getElementById("itemName").value = item.name;
+  document.getElementById("itemCategory").value = item.category;
+  document.getElementById("itemPrice").value = item.price;
+  document.getElementById("formTitle").textContent = "Edit Item";
+  document.getElementById("saveButton").textContent = "Save Changes";
+  document.getElementById("cancelButton").classList.remove("hidden");
+  document.getElementById("itemName").focus();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById("itemForm").reset();
+  document.getElementById("formTitle").textContent = "Add New Item";
+  document.getElementById("saveButton").textContent = "Add Item";
+  document.getElementById("cancelButton").classList.add("hidden");
+}
+
+document.getElementById("itemForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("itemName").value.trim();
+  const category = document.getElementById("itemCategory").value;
+  const price = Number(document.getElementById("itemPrice").value);
+
+  if (!name || !Number.isFinite(price) || price < 0) {
+    alert("Enter a valid item name and price.");
+    return;
+  }
+
+  if (editingId !== null) {
+    const item = items.find(x => x.id === editingId);
+    if (item) Object.assign(item, {name,category,price});
+  } else {
+    items.push({
+      id: Date.now(),
+      name,
+      category,
+      price
+    });
+  }
+
+  saveItems();
+  resetForm();
+  alert("Menu saved in this browser.");
+});
+
+function deleteItem(id) {
+  const item = items.find(x => x.id === id);
+  if (!item) return;
+
+  if (confirm("Delete " + item.name + " from the menu?")) {
+    items = items.filter(x => x.id !== id);
+    saveItems();
+    if (editingId === id) resetForm();
+  }
+}
+
+renderMenu();
+</script>
+</body>
+</html>
